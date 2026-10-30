@@ -26,7 +26,13 @@ jobs:
           gradle-version: 8.14.3
 
       - name: DOCX engine tests
-        run: gradle :core:docx:test --stacktrace
+        shell: bash
+        run: gradle :core:docx:test --stacktrace 2>&1 | tee build.log
+
+      - name: Summarize results
+        if: always()
+        shell: bash
+        run: bash .github/scripts/summarize.sh build.log core/docx/build/test-results/test
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -49,7 +55,13 @@ jobs:
           gradle-version: 8.14.3
 
       - name: Unit tests
-        run: gradle testDebugUnitTest :core:docx:test --stacktrace
+        shell: bash
+        run: gradle testDebugUnitTest :core:docx:test --stacktrace 2>&1 | tee build.log
+
+      - name: Summarize results
+        if: always()
+        shell: bash
+        run: bash .github/scripts/summarize.sh build.log core/docx/build/test-results/test
 
       - name: Lint
         run: gradle lintDebug --stacktrace
