@@ -44,6 +44,7 @@ jobs:
         with:
           name: docx-samples
           path: core/docx/build/samples/
+          if-no-files-found: error
 
   # Opens documents produced by the engine in LibreOffice, an independent implementation.
   compat:
