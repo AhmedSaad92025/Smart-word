@@ -6,9 +6,9 @@ import com.smartword.docx.xml.XmlText
 /** Converts WordprocessingML elements into the editable model. */
 internal object DocxReader {
 
-    fun readBlock(el: XmlElement): DocxBlock? {
+    fun readBlock(el: XmlElement, ctx: WContext): DocxBlock? {
         if (el.isW("sectPr")) return null
-        if (el.isW("p")) return readParagraph(el)
+        if (el.isW("p")) return readParagraph(el, ctx)
         val kind = when {
             el.isW("tbl") -> OpaqueKind.TABLE
             el.isW("sdt") -> OpaqueKind.STRUCTURED_TAG
@@ -17,25 +17,25 @@ internal object DocxReader {
         return OpaqueBlock(el, kind, blockPreview(el))
     }
 
-    fun readParagraph(p: XmlElement): DocxParagraph {
+    fun readParagraph(p: XmlElement, ctx: WContext): DocxParagraph {
         var pPr: XmlElement? = null
         val inlines = ArrayList<DocxInline>()
         for (child in p.children) {
             if (child !is XmlElement) continue
             when {
                 child.isW("pPr") -> pPr = child
-                child.isW("r") -> inlines.add(readRun(child))
+                child.isW("r") -> inlines.add(readRun(child, ctx))
                 else -> inlines.add(OpaqueInline(child, inlinePreview(child)))
             }
         }
-        return DocxParagraph(p, pPr, inlines)
+        return DocxParagraph(ctx, p, pPr, inlines)
     }
 
     /**
      * A run made only of properties, text, tabs and plain line breaks is editable.
      * Anything else (drawings, fields, page breaks, footnote references, ...) is opaque.
      */
-    private fun readRun(r: XmlElement): DocxInline {
+    private fun readRun(r: XmlElement, ctx: WContext): DocxInline {
         var rPr: XmlElement? = null
         val sb = StringBuilder()
         var editable = true
@@ -54,15 +54,15 @@ internal object DocxReader {
                     val type = c.attr("type")
                     if (type == null || type == "textWrapping") sb.append('\n') else editable = false
                 }
-                c.isW("noBreakHyphen") -> sb.append('‑')
-                c.isW("softHyphen") -> sb.append('­')
+                c.isW("noBreakHyphen") -> sb.append('\u2011')
+                c.isW("softHyphen") -> sb.append('\u00AD')
                 c.isW("lastRenderedPageBreak") -> Unit
                 else -> editable = false
             }
         }
         val text = sb.toString()
         if (!editable) return OpaqueInline(r, text)
-        return TextRun(text, WordProps.readRunFormat(rPr, text), rPr, r)
+        return TextRun(ctx, text, WordProps.readRunFormat(rPr, text), rPr, r)
     }
 
     /** Visible text of an inline element such as a hyperlink or tracked insertion. */
