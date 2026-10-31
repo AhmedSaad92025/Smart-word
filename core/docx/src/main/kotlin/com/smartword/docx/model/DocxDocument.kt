@@ -4,6 +4,10 @@ import com.smartword.docx.InvalidDocxException
 import com.smartword.docx.pkg.DocxPackage
 import com.smartword.docx.pkg.Opc
 import com.smartword.docx.pkg.ReadLimits
+import com.smartword.docx.style.NumberingCounter
+import com.smartword.docx.style.NumberingDefs
+import com.smartword.docx.style.StyleSheet
+import com.smartword.docx.style.ThemeFonts
 import com.smartword.docx.xml.XmlDocument
 import com.smartword.docx.xml.XmlElement
 import com.smartword.docx.xml.XmlNode
@@ -28,11 +32,32 @@ class DocxDocument private constructor(
     private val ctx: WContext,
     blocks: List<DocxBlock>,
     private val trailing: List<XmlElement>,
+    /** Problems found while opening that did not prevent the document from opening. */
+    val warnings: List<String>,
 ) {
     private val blockList = ArrayList<DocxBlock>(blocks)
     private var structureChanged = false
 
     val blocks: List<DocxBlock> get() = blockList
+
+    /** The styles of the document (read-only). Empty if the file has none or they are damaged. */
+    val styles: StyleSheet get() = ctx.resolver.styles
+
+    /**
+     * The marker of every list item in the document, computed in document order: bullets and
+     * numbers such as "1.", "a)" or "ب-". Paragraphs that are not list items are absent.
+     * Paragraphs inside tables are not part of the model and do not take part in numbering.
+     */
+    fun listLabels(): Map<DocxParagraph, ListLabel> {
+        val result = HashMap<DocxParagraph, ListLabel>()
+        val counter = NumberingCounter(ctx.resolver.numbering)
+        for (p in paragraphs) {
+            val ref = ctx.resolver.listRef(p) ?: continue
+            val label = counter.next(ref.first, ref.second) ?: continue
+            result[p] = label
+        }
+        return result
+    }
 
     val paragraphs: List<DocxParagraph> get() = blockList.filterIsInstance<DocxParagraph>()
 
@@ -181,6 +206,8 @@ class DocxDocument private constructor(
             val body = xml.root.child("body")
                 ?: throw InvalidDocxException("The document has no body")
             val ctx = WContext.forRoot(xml.root)
+            val warnings = ArrayList<String>()
+            ctx.resolver = loadResolver(pkg, part.name, warnings)
 
             val blocks = ArrayList<DocxBlock>()
             val trailing = ArrayList<XmlElement>()
@@ -193,7 +220,38 @@ class DocxDocument private constructor(
                 val block = DocxReader.readBlock(child, ctx)
                 if (block != null) blocks.add(block)
             }
-            return DocxDocument(pkg, part.name, xml, body, ctx, blocks, trailing)
+            return DocxDocument(pkg, part.name, xml, body, ctx, blocks, trailing, warnings)
+        }
+
+        /**
+         * Loads styles, numbering and the theme. These parts only refine how the document is
+         * displayed, so a missing or damaged one is reported as a warning and ignored instead of
+         * preventing the document from opening.
+         */
+        private fun loadResolver(pkg: DocxPackage, mainName: String, warnings: MutableList<String>): StyleResolver {
+            fun locate(typeSuffix: String, fallback: String) =
+                pkg.find(Opc.relatedPartName(pkg, mainName, typeSuffix) ?: fallback)
+
+            fun <T> guarded(what: String, fallback: T, block: () -> T): T = try {
+                block()
+            } catch (e: Exception) {
+                warnings.add("The $what part could not be read and was ignored: ${e.message}")
+                fallback
+            }
+
+            val styles = guarded("styles", StyleSheet.EMPTY) {
+                val part = locate("/styles", "word/styles.xml")
+                if (part == null) StyleSheet.EMPTY else StyleSheet.parse(XmlParser.parse(part.bytes).root)
+            }
+            val numbering = guarded("numbering", NumberingDefs.EMPTY) {
+                val part = locate("/numbering", "word/numbering.xml")
+                if (part == null) NumberingDefs.EMPTY else NumberingDefs.parse(XmlParser.parse(part.bytes).root)
+            }
+            val theme = guarded("theme", ThemeFonts.EMPTY) {
+                val part = locate("/theme", "word/theme/theme1.xml")
+                if (part == null) ThemeFonts.EMPTY else ThemeFonts.parse(XmlParser.parse(part.bytes).root)
+            }
+            return StyleResolver(styles, numbering, theme)
         }
     }
 }

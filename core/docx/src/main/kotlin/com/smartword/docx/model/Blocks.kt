@@ -36,16 +36,49 @@ class DocxParagraph internal constructor(
             return sb.toString()
         }
 
-    /** True if the paragraph direction is right-to-left (w:bidi). */
+    /** True if the paragraph is right-to-left, whether set directly (w:bidi) or by its style or the defaults. */
     val isRtl: Boolean
-        get() = WordProps.onOff(pPr?.child("bidi")) == true
+        get() = ctx.resolver.isRtl(this)
 
     /**
-     * Visual alignment, or null when the paragraph does not set one (then it starts at
-     * the leading edge: left for LTR paragraphs, right for RTL paragraphs).
+     * The visual alignment set directly on this paragraph, or null when it sets none (the
+     * style or the default then decides; see [format] for the effective value).
      */
     val alignment: Alignment?
         get() = WordProps.alignmentOf(pPr?.child("jc")?.attr("val"), isRtl)
+
+    // ---- styles ----
+
+    /** The paragraph style named by the paragraph (w:pStyle), or null if it names none. */
+    val styleId: String?
+        get() = pPr?.child("pStyle")?.attr("val")
+
+    /** Paragraph formatting as the reader sees it, with styles, list level and defaults applied. */
+    val format: ParagraphFormat
+        get() = ctx.resolver.paragraphFormat(this)
+
+    /** 1..9 if this paragraph is a heading, otherwise null. */
+    val headingLevel: Int?
+        get() = format.headingLevel
+
+    /** Character formatting of [run] as the reader sees it, with styles and defaults applied. */
+    fun effectiveFormat(run: TextRun): EffectiveRunFormat = ctx.resolver.runFormat(this, run)
+
+    /**
+     * Applies the paragraph style [styleId], or removes the paragraph's own style when null.
+     * Only styles that exist in the document can be applied.
+     */
+    fun setStyle(styleId: String?) {
+        require(styleId == null || ctx.resolver.hasParagraphStyle(styleId)) {
+            "Unknown paragraph style '$styleId'"
+        }
+        touch()
+        if (styleId == null) {
+            pPr?.children?.removeAll { it is XmlElement && it.isW("pStyle") }
+            return
+        }
+        PropOrder.PPR.getOrCreate(ensurePPr(), "pStyle", ctx).setAttr(ctx.qn("val"), styleId)
+    }
 
     // ---- text editing ----
 

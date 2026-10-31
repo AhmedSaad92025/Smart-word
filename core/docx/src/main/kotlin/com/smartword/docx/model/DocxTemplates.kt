@@ -50,7 +50,25 @@ internal object DocxTemplates {
         "<w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><w:qFormat/></w:style>" +
         "<w:style w:type=\"character\" w:default=\"1\" w:styleId=\"DefaultParagraphFont\">" +
         "<w:name w:val=\"Default Paragraph Font\"/><w:uiPriority w:val=\"1\"/><w:semiHidden/><w:unhideWhenUsed/></w:style>" +
+        paragraphStyle("Title", "Title", 10, "<w:spacing w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/><w:contextualSpacing/>",
+            "<w:sz w:val=\"56\"/><w:szCs w:val=\"56\"/>") +
+        paragraphStyle("Heading1", "heading 1", 9,
+            "<w:keepNext/><w:keepLines/><w:spacing w:before=\"240\" w:after=\"80\"/><w:outlineLvl w:val=\"0\"/>",
+            "<w:b/><w:bCs/><w:color w:val=\"2F5496\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/>") +
+        paragraphStyle("Heading2", "heading 2", 9,
+            "<w:keepNext/><w:keepLines/><w:spacing w:before=\"160\" w:after=\"80\"/><w:outlineLvl w:val=\"1\"/>",
+            "<w:b/><w:bCs/><w:color w:val=\"2F5496\"/><w:sz w:val=\"26\"/><w:szCs w:val=\"26\"/>") +
+        paragraphStyle("Heading3", "heading 3", 9,
+            "<w:keepNext/><w:keepLines/><w:spacing w:before=\"160\" w:after=\"80\"/><w:outlineLvl w:val=\"2\"/>",
+            "<w:b/><w:bCs/><w:color w:val=\"1F3763\"/><w:sz w:val=\"24\"/><w:szCs w:val=\"24\"/>") +
+        paragraphStyle("ListParagraph", "List Paragraph", 34, "<w:ind w:left=\"720\"/><w:contextualSpacing/>", "") +
         "</w:styles>"
+
+    /** A built-in paragraph style based on Normal that appears in Word's style gallery. */
+    private fun paragraphStyle(id: String, name: String, priority: Int, pPr: String, rPr: String): String =
+        "<w:style w:type=\"paragraph\" w:styleId=\"$id\"><w:name w:val=\"$name\"/>" +
+            "<w:basedOn w:val=\"Normal\"/><w:next w:val=\"Normal\"/><w:uiPriority w:val=\"$priority\"/><w:qFormat/>" +
+            "<w:pPr>$pPr</w:pPr>" + (if (rPr.isEmpty()) "" else "<w:rPr>$rPr</w:rPr>") + "</w:style>"
 
     private val SETTINGS = DECL +
         "<w:settings xmlns:w=\"${Ns.W}\">" +

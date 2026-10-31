@@ -30,6 +30,9 @@ class TextRun internal constructor(
 
     override val visibleText: String get() = text
 
+    /** The character style applied to this run (w:rStyle), or null. */
+    val styleId: String? get() = rPr?.child("rStyle")?.attr("val")
+
     internal fun setContent(newText: String) {
         text = newText
         source = null

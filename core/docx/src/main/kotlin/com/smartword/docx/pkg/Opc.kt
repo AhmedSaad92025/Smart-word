@@ -13,6 +13,49 @@ object Opc {
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
 
     /**
+     * Finds a part related to [sourcePart] by a relationship whose type ends with [typeSuffix]
+     * (for example "/styles"), or null if there is none or its target does not exist.
+     */
+    fun relatedPartName(pkg: DocxPackage, sourcePart: String, typeSuffix: String): String? {
+        val dir = sourcePart.substringBeforeLast('/', "")
+        val file = sourcePart.substringAfterLast('/')
+        val relsName = (if (dir.isEmpty()) "" else "$dir/") + "_rels/$file.rels"
+        val rels = pkg.find(relsName) ?: return null
+        val root = try {
+            XmlParser.parse(rels.bytes).root
+        } catch (e: XmlParseException) {
+            return null
+        }
+        for (rel in root.elements()) {
+            if (rel.localName != "Relationship") continue
+            val type = rel.attr("Type") ?: continue
+            if (!type.endsWith(typeSuffix)) continue
+            if (rel.attr("TargetMode") == "External") continue
+            val target = rel.attr("Target") ?: continue
+            val path = when {
+                target.startsWith("/") -> target.substring(1)
+                dir.isEmpty() -> target
+                else -> "$dir/$target"
+            }
+            val part = pkg.find(normalizePath(path))
+            if (part != null) return part.name
+        }
+        return null
+    }
+
+    private fun normalizePath(path: String): String {
+        val out = ArrayList<String>()
+        for (segment in path.split('/')) {
+            when (segment) {
+                "", "." -> Unit
+                ".." -> if (out.isNotEmpty()) out.removeAt(out.size - 1)
+                else -> out.add(segment)
+            }
+        }
+        return out.joinToString("/")
+    }
+
+    /**
      * Returns the name of the main document part, following the package-level
      * relationship of type officeDocument. Falls back to word/document.xml.
      */

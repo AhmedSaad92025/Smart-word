@@ -10,6 +10,9 @@ import com.smartword.docx.xml.XmlElement
  */
 internal class WContext(val prefix: String) {
 
+    /** Styles, numbering and theme of the document; empty until the document has loaded them. */
+    var resolver: StyleResolver = StyleResolver.EMPTY
+
     /** Qualified name (element or attribute) in the WordprocessingML namespace. */
     fun qn(local: String): String = "$prefix:$local"
 
