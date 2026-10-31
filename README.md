@@ -4,7 +4,7 @@
 
 ## الحالة
 
-المرحلة 0 (التأسيس) — انظر [docs/ROADMAP.md](docs/ROADMAP.md).
+المرحلة 1 (محرك DOCX) مكتملة — انظر [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## المواصفات
 
