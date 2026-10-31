@@ -40,6 +40,37 @@ jobs:
           name: core-test-reports
           path: core/docx/build/reports/tests/
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docx-samples
+          path: core/docx/build/samples/
+
+  # Opens documents produced by the engine in LibreOffice, an independent implementation.
+  compat:
+    needs: core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: docx-samples
+          path: samples
+
+      - name: Install LibreOffice and PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libreoffice-writer poppler-utils fonts-dejavu-core
+
+      - name: Check samples in LibreOffice
+        run: python3 .github/scripts/check_compat.py samples compat-out
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compat-output
+          path: compat-out/
+
   android:
     runs-on: ubuntu-latest
     steps:

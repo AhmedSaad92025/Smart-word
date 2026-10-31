@@ -5,6 +5,7 @@ import com.smartword.docx.pkg.DocxPackage
 import com.smartword.docx.xml.Ns
 import com.smartword.docx.xml.XmlElement
 import com.smartword.docx.xml.XmlParser
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 
 /** Shared checks for tests that save and inspect documents. */
@@ -45,6 +46,56 @@ object DocxAssertions {
             n++
             from = at + needle.length
         }
+    }
+
+    /**
+     * Checks the OPC rules Word relies on: every part has a content type, every override
+     * names an existing part, all XML parts are well-formed and every internal relationship
+     * points to an existing part.
+     */
+    fun assertPackageIntegrity(docxBytes: ByteArray) {
+        val pkg = DocxPackage.read(docxBytes)
+        val types = XmlParser.parse(
+            (pkg.find("[Content_Types].xml") ?: throw AssertionError("[Content_Types].xml is missing")).bytes,
+        ).root
+        val defaults = HashSet<String>()
+        val overrides = HashSet<String>()
+        for (e in types.elements()) {
+            if (e.localName == "Default") e.attr("Extension")?.let { defaults.add(it.lowercase()) }
+            if (e.localName == "Override") e.attr("PartName")?.let { overrides.add(it) }
+        }
+
+        for (part in pkg.parts) {
+            if (part.name == "[Content_Types].xml") continue
+            val ext = part.name.substringAfterLast('.', "").lowercase()
+            assertTrue("No content type for ${part.name}", overrides.contains("/${part.name}") || defaults.contains(ext))
+            if (ext == "xml" || ext == "rels") XmlParser.parse(part.bytes)
+        }
+        for (o in overrides) {
+            assertNotNull("Content type override for a missing part: $o", pkg.find(o.removePrefix("/")))
+        }
+        for (part in pkg.parts) {
+            if (!part.name.endsWith(".rels")) continue
+            val baseDir = part.name.substringBefore("_rels/")
+            for (rel in XmlParser.parse(part.bytes).root.elements()) {
+                if (rel.attr("TargetMode") == "External") continue
+                val target = rel.attr("Target") ?: continue
+                val resolved = if (target.startsWith("/")) target.removePrefix("/") else normalizePath(baseDir + target)
+                assertNotNull("${part.name}: relationship target $target does not exist", pkg.find(resolved))
+            }
+        }
+    }
+
+    private fun normalizePath(path: String): String {
+        val out = ArrayList<String>()
+        for (segment in path.split('/')) {
+            when (segment) {
+                "", "." -> Unit
+                ".." -> if (out.isNotEmpty()) out.removeAt(out.size - 1)
+                else -> out.add(segment)
+            }
+        }
+        return out.joinToString("/")
     }
 
     /** Fails if any w:rPr or w:pPr in the document lists its children out of schema order. */

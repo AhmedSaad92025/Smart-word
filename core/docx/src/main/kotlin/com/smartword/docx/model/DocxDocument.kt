@@ -156,6 +156,10 @@ class DocxDocument private constructor(
     }
 
     companion object {
+        /** Creates an empty A4 document; with [rtl] its first paragraph and page are right-to-left. */
+        fun create(rtl: Boolean = false, now: java.time.Instant = java.time.Instant.now()): DocxDocument =
+            fromPackage(DocxPackage.read(DocxTemplates.newDocument(rtl, now)))
+
         fun open(bytes: ByteArray, limits: ReadLimits = ReadLimits()): DocxDocument =
             fromPackage(DocxPackage.read(bytes, limits))
 
