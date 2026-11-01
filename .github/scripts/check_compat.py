@@ -200,15 +200,23 @@ def check_styles(name, src, outdir):
 
     # Arabic multi-level list (abjad letters, Hindi digits): the label's characters, whatever order
     # the PDF text extraction puts them in.
-    for marker, needed in (("ARMA", "أ"), ("ARMB", "أ١"), ("ARMC", "أ٢"), ("ARMD", "ب")):
+    # PDF text extraction folds the hamza alef to a plain alef and may show Hindi digits as Latin
+    # ones, so each expected character lists the glyphs accepted for it; the label's letter and
+    # the digit's value are checked, not which digit shapes the extraction reports.
+    for marker, needed in (
+        ("ARMA", ["أا"]),
+        ("ARMB", ["أا", "١1"]),
+        ("ARMC", ["أا", "٢2"]),
+        ("ARMD", ["ب"]),
+    ):
         row = row_words(words, marker)
         if row is None:
             fail(f"{name}: marker {marker} not found in the PDF")
             continue
         label_text = "".join(w[4] for w in row if w[4] != marker and not re.search(r"[A-Za-z]", w[4]))
         # The label is the part of the line that is not the Arabic body word.
-        missing = [ch for ch in needed if ch not in label_text]
-        expect(not missing, f"{marker} line shows {[w[4] for w in row]}, label should contain {list(needed)}")
+        missing = [accepted for accepted in needed if not any(ch in label_text for ch in accepted)]
+        expect(not missing, f"{marker} line shows {[w[4] for w in row]}, label should contain one of {needed}")
 
     # w:lvlRestart=0 (never restart) is part of the OOXML spec and is implemented by the engine, but
     # LibreOffice ignores it and restarts anyway. The line is reported, not enforced.
