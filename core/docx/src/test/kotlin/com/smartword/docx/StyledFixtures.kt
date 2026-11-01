@@ -93,7 +93,7 @@ object StyledFixtures {
         minorCs: String = "",
         minorArabic: String = "Arial",
     ): String =
-        DECL + "<a:theme xmlns:a=\"$A\" name=\"Office\"><a:themeElements><a:fontScheme name=\"Office\">" +
+        DECL + "<a:theme xmlns:a=\"$A\" name=\"Office\"><a:themeElements>" + CLR_SCHEME + "<a:fontScheme name=\"Office\">" +
             "<a:majorFont><a:latin typeface=\"$majorLatin\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/>" +
             "<a:font script=\"Arab\" typeface=\"Times New Roman\"/></a:majorFont>" +
             "<a:minorFont><a:latin typeface=\"$minorLatin\"/><a:ea typeface=\"\"/><a:cs typeface=\"$minorCs\"/>" +
