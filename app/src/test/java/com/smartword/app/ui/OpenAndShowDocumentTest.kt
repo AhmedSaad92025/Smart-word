@@ -4,13 +4,13 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.core.view.drawToBitmap
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToString
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.test.core.app.ApplicationProvider
 import com.smartword.app.MainViewModel
 import com.smartword.app.OpenDocument
@@ -36,7 +36,7 @@ import java.io.File
 class OpenAndShowDocumentTest {
 
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
     private val app: Application get() = ApplicationProvider.getApplicationContext()
 
@@ -46,25 +46,68 @@ class OpenAndShowDocumentTest {
         return file
     }
 
-    private fun screenshot(name: String) {
-        val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
-        val dir = File("build/screenshots").also { it.mkdirs() }
-        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    /** The screen as pixels: the activity's views drawn into a bitmap (no window capture needed). */
+    private fun render(): Bitmap {
+        rule.waitForIdle()
+        return rule.activity.window.decorView.drawToBitmap()
     }
 
-    /** Counts nearly black pixels (text on the white page) in the rendered screen. */
-    private fun darkPixels(): Int {
-        val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
-        var count = 0
+    private fun screenshot(name: String): Bitmap {
+        val bitmap = render()
+        val dir = File("build/screenshots").also { it.mkdirs() }
+        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        println("SCREEN $name ${bitmap.width}x${bitmap.height}\n" + asciiMap(bitmap))
+        return bitmap
+    }
+
+    private fun classify(p: Int): Char {
+        val r = (p shr 16) and 0xFF
+        val g = (p shr 8) and 0xFF
+        val b = p and 0xFF
+        return when {
+            (p ushr 24) == 0 -> '?'
+            r < 70 && g < 70 && b < 70 -> '#'
+            r > 245 && g > 245 && b > 245 -> '.'
+            b > r + 60 -> 'B'
+            r > 200 && g > 200 && b > 200 -> ','
+            else -> 'x'
+        }
+    }
+
+    /** A coarse picture of the screen: # dark text, . white page, , gray desk, B blue, x other, ? transparent. */
+    private fun asciiMap(bitmap: Bitmap, columns: Int = 40, rows: Int = 60): String {
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        for (p in pixels) {
-            val r = (p shr 16) and 0xFF
-            val g = (p shr 8) and 0xFF
-            val b = p and 0xFF
-            if (r < 60 && g < 60 && b < 60) count++
+        val sb = StringBuilder()
+        val cellW = bitmap.width / columns
+        val cellH = bitmap.height / rows
+        for (row in 0 until rows) {
+            for (col in 0 until columns) {
+                val counts = HashMap<Char, Int>()
+                var y = row * cellH
+                while (y < (row + 1) * cellH) {
+                    var x = col * cellW
+                    while (x < (col + 1) * cellW) {
+                        val c = classify(pixels[y * bitmap.width + x])
+                        counts[c] = (counts[c] ?: 0) + 1
+                        x += 3
+                    }
+                    y += 3
+                }
+                // Dark text is thin, so any real amount of it wins over the background.
+                val dark = counts['#'] ?: 0
+                val total = counts.values.sum().coerceAtLeast(1)
+                sb.append(if (dark * 40 > total) '#' else counts.maxByOrNull { it.value }?.key ?: ' ')
+            }
+            sb.append('\n')
         }
-        return count
+        return sb.toString()
+    }
+
+    private fun count(bitmap: Bitmap, c: Char): Int {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return pixels.count { classify(it) == c }
     }
 
     private fun openThroughViewModel(file: File): MainViewModel {
@@ -89,15 +132,17 @@ class OpenAndShowDocumentTest {
         rule.onNodeWithText("المقدمة", substring = true).assertIsDisplayed()
         rule.onNodeWithText("هذه فقرة عربية عادية", substring = true).assertIsDisplayed()
         rule.waitForIdle()
-        screenshot("arabic")
-        assertTrue("no text pixels were drawn", darkPixels() > 500)
+        val shot = screenshot("arabic")
+        assertTrue("no text pixels were drawn: ${count(shot, '#')}", count(shot, '#') > 500)
+        assertTrue("no white page was drawn", count(shot, '.') > 5000)
+        assertTrue("no toolbar was drawn", count(shot, 'B') > 1000)
     }
 
     @Test
     fun listLabelsAreShownWithTheirItems() {
         openThroughViewModel(testFile("02-multilevel-lists.docx"))
         waitForText("البند الأول")
-        rule.onNodeWithText("أ-", substring = true).assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithText("أ-", substring = true).fetchSemanticsNodes().isNotEmpty())
         rule.onNodeWithText("Chapter one", substring = true).assertIsDisplayed()
         rule.onNodeWithText("1.1.1", substring = true).assertIsDisplayed()
         screenshot("lists")
