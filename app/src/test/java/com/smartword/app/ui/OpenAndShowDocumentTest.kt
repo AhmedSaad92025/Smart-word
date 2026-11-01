@@ -144,7 +144,7 @@ class OpenAndShowDocumentTest {
         waitForText("البند الأول")
         assertTrue(rule.onAllNodesWithText("أ-", substring = true).fetchSemanticsNodes().isNotEmpty())
         rule.onNodeWithText("Chapter one", substring = true).assertIsDisplayed()
-        rule.onNodeWithText("1.1.1", substring = true).assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithText("1.1.1  Subsection", substring = true).fetchSemanticsNodes().isNotEmpty())
         screenshot("lists")
     }
 

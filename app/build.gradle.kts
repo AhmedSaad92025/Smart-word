@@ -48,6 +48,13 @@ android {
     }
 }
 
+// Show what the screen tests print (a text picture of the rendered screen) in the CI log.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
 dependencies {
     implementation(project(":core:docx"))
 
