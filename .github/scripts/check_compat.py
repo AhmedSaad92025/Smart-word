@@ -187,7 +187,9 @@ def check_styles(name, src, outdir):
 
     # List labels, including the restart rules of multi-level lists.
     labels = [("NUMA", "1."), ("NUMB", "a)"), ("NUMC", "b)"), ("NUMD", "2."), ("NUME", "a)"),
-              ("RSTA", "1."), ("RSTB", "a)"), ("RSTC", "2.")]
+              ("RSTA", "1."), ("RSTB", "a)"), ("RSTC", "2."),
+              ("DEEPA", "1."), ("DEEPB", "1.1"), ("DEEPC", "1.1.1"), ("DEEPD", "1.1.2"),
+              ("DEEPE", "1.2"), ("DEEPF", "1.2.1"), ("DEEPG", "2.")]
     for marker, label in labels:
         row = row_words(words, marker)
         if row is None:
@@ -195,6 +197,18 @@ def check_styles(name, src, outdir):
             continue
         found = [w[4] for w in row]
         expect(label in found, f"{marker} line shows {found}, expected label {label}")
+
+    # Arabic multi-level list (abjad letters, Hindi digits): the label's characters, whatever order
+    # the PDF text extraction puts them in.
+    for marker, needed in (("ARMA", "أ"), ("ARMB", "أ١"), ("ARMC", "أ٢"), ("ARMD", "ب")):
+        row = row_words(words, marker)
+        if row is None:
+            fail(f"{name}: marker {marker} not found in the PDF")
+            continue
+        label_text = "".join(w[4] for w in row if w[4] != marker and not re.search(r"[A-Za-z]", w[4]))
+        # The label is the part of the line that is not the Arabic body word.
+        missing = [ch for ch in needed if ch not in label_text]
+        expect(not missing, f"{marker} line shows {[w[4] for w in row]}, label should contain {list(needed)}")
 
     # w:lvlRestart=0 (never restart) is part of the OOXML spec and is implemented by the engine, but
     # LibreOffice ignores it and restarts anyway. The line is reported, not enforced.

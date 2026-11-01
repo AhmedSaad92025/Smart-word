@@ -63,9 +63,22 @@ class StyledSamplesTest {
             2,
             lvl(0, "arabicAlpha", "%1.", pPr = "<w:ind w:left=\"720\" w:hanging=\"360\"/>"),
         ),
+        abstractNum(
+            3,
+            lvl(0, "decimal", "%1."),
+            lvl(1, "decimal", "%1.%2"),
+            lvl(2, "decimal", "%1.%2.%3"),
+        ),
+        abstractNum(
+            4,
+            lvl(0, "arabicAbjad", "%1-", pPr = "<w:ind w:left=\"720\" w:hanging=\"360\"/>"),
+            lvl(1, "hindiNumbers", "%1.%2", pPr = "<w:ind w:left=\"1440\" w:hanging=\"360\"/>"),
+        ),
         num(1, 0),
         num(2, 1),
         num(3, 2),
+        num(4, 3),
+        num(5, 4),
     )
 
     private fun item(text: String, numId: Int, ilvl: Int, extra: String = "") =
@@ -82,6 +95,10 @@ class StyledSamplesTest {
                 item("NUMD", 1, 0) + item("NUME", 1, 1) +
                 item("RSTA", 2, 0) + item("RSTB", 2, 1) + item("RSTC", 2, 0) + item("RSTD", 2, 1) +
                 item("عنصر ARLISTA", 3, 0, "<w:bidi/>") + item("عنصر ARLISTB", 3, 0, "<w:bidi/>") +
+                item("DEEPA", 4, 0) + item("DEEPB", 4, 1) + item("DEEPC", 4, 2) + item("DEEPD", 4, 2) +
+                item("DEEPE", 4, 1) + item("DEEPF", 4, 2) + item("DEEPG", 4, 0) +
+                item("عنصر ARMA", 5, 0, "<w:bidi/>") + item("عنصر ARMB", 5, 1, "<w:bidi/>") +
+                item("عنصر ARMC", 5, 1, "<w:bidi/>") + item("عنصر ARMD", 5, 0, "<w:bidi/>") +
                 para(run("نص STYLERTL"), "<w:pStyle w:val=\"ArabicStart\"/>")
 
         val doc = DocxDocument.open(StyledFixtures.docx(body, styles, numbering, StyledFixtures.themeXml(), sectPr))
@@ -93,6 +110,14 @@ class StyledSamplesTest {
         fun label(text: String) = labels[byText.getValue(text)]?.text
         assertEquals(listOf("1.", "a)", "b)", "2.", "a)"), listOf("NUMA", "NUMB", "NUMC", "NUMD", "NUME").map(::label))
         assertEquals(listOf("1.", "a)", "2.", "b)"), listOf("RSTA", "RSTB", "RSTC", "RSTD").map(::label))
+        assertEquals(
+            listOf("1.", "1.1", "1.1.1", "1.1.2", "1.2", "1.2.1", "2."),
+            listOf("DEEPA", "DEEPB", "DEEPC", "DEEPD", "DEEPE", "DEEPF", "DEEPG").map(::label),
+        )
+        assertEquals(
+            listOf("أ-", "أ.١", "أ.٢", "ب-"),
+            listOf("عنصر ARMA", "عنصر ARMB", "عنصر ARMC", "عنصر ARMD").map(::label),
+        )
         assertEquals(1, byText.getValue("HEADONE").headingLevel)
         assertEquals(2, byText.getValue("HEADTWO").headingLevel)
 
@@ -104,7 +129,7 @@ class StyledSamplesTest {
         dir.mkdirs()
         File(dir, "styles-lists.docx").writeBytes(bytes)
         File(dir, "styles-lists.expect").writeText(
-            listOf("HEADONE", "HEADTWO", "BODYTEXT", "THEMEMARK", "NUMA", "RSTD", "ARLISTB", "STYLERTL", "EDITMARK")
+            listOf("HEADONE", "HEADTWO", "BODYTEXT", "THEMEMARK", "NUMA", "RSTD", "ARLISTB", "DEEPG", "ARMD", "STYLERTL", "EDITMARK")
                 .joinToString("\n"),
             Charsets.UTF_8,
         )
