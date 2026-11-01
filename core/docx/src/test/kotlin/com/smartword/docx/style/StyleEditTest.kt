@@ -166,6 +166,35 @@ class StyleEditTest {
         for (part in a.parts) assertArrayEquals(part.name, part.bytes, b.find(part.name)!!.bytes)
     }
 
+    @Test
+    fun aCharacterStyleBoldOnABoldHeadingTogglesBoldOff() {
+        val styledRun = "<w:r><w:rPr><w:rStyle w:val=\"Strong\"/></w:rPr><w:t>strong</w:t></w:r>"
+        val doc = docOf(
+            para(styledRun, "<w:pStyle w:val=\"Heading1\"/>") + para(styledRun),
+        )
+        val inHeading = doc.paragraphs[0].let { it.effectiveFormat(it.inlines[0] as TextRun) }
+        val inBody = doc.paragraphs[1].let { it.effectiveFormat(it.inlines[0] as TextRun) }
+        assertFalse(inHeading.bold)
+        assertTrue(inBody.bold)
+    }
+
+    @Test
+    fun changingDirectionKeepsAnAlignmentThatComesFromTheStyle() {
+        val rightStyles = stylesXml(
+            normal(),
+            style("RightAligned", "Right", basedOn = "Normal", pPr = "<w:jc w:val=\"right\"/>"),
+        )
+        val doc = DocxDocument.open(
+            StyledFixtures.docx(para(run("x"), "<w:pStyle w:val=\"RightAligned\"/>"), styles = rightStyles),
+        )
+        val p = doc.paragraphs[0]
+        assertEquals(Alignment.RIGHT, p.format.alignment)
+        p.setRtl(true)
+        val saved = reopen(doc).paragraphs[0]
+        assertTrue(saved.isRtl)
+        assertEquals(Alignment.RIGHT, saved.format.alignment)
+    }
+
     // ---- documents created by the engine ----
 
     @Test

@@ -302,6 +302,6 @@ class NumberingTest {
     fun noListsMeansNoLabels() {
         val doc = DocxDocument.open(StyledFixtures.docx(para(run("x"))))
         assertTrue(doc.listLabels().isEmpty())
-        assertFalse(doc.styles.styles.isEmpty().not())
+        assertFalse(doc.styles.styles.isEmpty())
     }
 }

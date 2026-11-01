@@ -303,11 +303,13 @@ class StyleReadTest {
 
     @Test
     fun complexScriptPropertiesApplyToArabicRuns() {
-        val p = docOf(para(run("مرحبا") + run("hello")), arabicStyles).paragraphs[0]
+        val p = docOf(para(run("مرحبا") + run("hello"), pStyle("ArabicBody")), arabicStyles).paragraphs[0]
         // The style marks its runs as right-to-left, so both runs use the complex-script properties.
-        assertTrue(fmt(p, 0).bold)
-        assertEquals(16f, fmt(p, 0).fontSizePt, 0.001f)
-        assertTrue(fmt(p, 0).rtl)
+        for (index in 0..1) {
+            assertTrue(fmt(p, index).bold)
+            assertEquals(16f, fmt(p, index).fontSizePt, 0.001f)
+            assertTrue(fmt(p, index).rtl)
+        }
     }
 
     @Test

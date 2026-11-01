@@ -32,6 +32,7 @@ class StyleSheet internal constructor(
     private val byId = HashMap<String, DocxStyle>()
     private val paraCache = HashMap<String, ParaBag>()
     private val paraRunCache = HashMap<String, RunBag>()
+    private val paraChainRunCache = HashMap<String, RunBag>()
 
     init {
         for (s in styles) {
@@ -82,9 +83,29 @@ class StyleSheet internal constructor(
         val bag = paragraphRunBag(paragraphStyleId).copy()
         val character = get(characterStyleId)
         if (character != null && character.type == StyleType.CHARACTER) {
-            for (s in chain(character)) bag.overlay(RunBag.from(s.rPr))
+            val characterBag = RunBag()
+            for (s in chain(character)) characterBag.overlay(RunBag.from(s.rPr))
+            bag.overlay(characterBag)
+
+            // Bold and italic are toggle properties: switched on by both the paragraph style and
+            // the character style they cancel out (Strong on a bold heading is not bold in Word).
+            val paragraphChain = paragraphChainRunBag(paragraphStyleId)
+            if (paragraphChain.bold == true && characterBag.bold == true) bag.bold = false
+            if (paragraphChain.boldCs == true && characterBag.boldCs == true) bag.boldCs = false
+            if (paragraphChain.italic == true && characterBag.italic == true) bag.italic = false
+            if (paragraphChain.italicCs == true && characterBag.italicCs == true) bag.italicCs = false
         }
         return bag
+    }
+
+    /** Only what the paragraph style chain itself sets, without the document defaults. Shared: do not modify. */
+    private fun paragraphChainRunBag(styleId: String?): RunBag {
+        val style = paragraphStyleOrDefault(styleId)
+        return paraChainRunCache.getOrPut(style?.id ?: "") {
+            val bag = RunBag()
+            for (s in chain(style)) bag.overlay(RunBag.from(s.rPr))
+            bag
+        }
     }
 
     /** The style and its ancestors, most distant ancestor first. Cycles and very long chains are cut off. */

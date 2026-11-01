@@ -217,9 +217,13 @@ class DocxParagraph internal constructor(
         PropsWriter.setJustification(ensurePPr(), PropsWriter.justificationFor(alignment, isRtl), ctx)
     }
 
-    /** Sets the paragraph direction, keeping the alignment the reader sees. */
+    /**
+     * Sets the paragraph direction, keeping the alignment the reader sees, including an
+     * alignment that the paragraph's style sets (it is then written onto the paragraph).
+     */
     fun setRtl(rtl: Boolean) {
-        val visual = alignment
+        val before = ctx.resolver.paragraphBag(this)
+        val visual = WordProps.alignmentOf(before.jc, before.bidi == true)
         touch()
         PropsWriter.setBidi(ensurePPr(), rtl, ctx)
         if (visual != null) setAlignment(visual)
