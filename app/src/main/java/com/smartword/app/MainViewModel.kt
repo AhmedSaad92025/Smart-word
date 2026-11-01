@@ -3,6 +3,7 @@ package com.smartword.app
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartword.app.data.DocumentRepository
@@ -34,14 +35,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Opens the document at [uri]. [persist] keeps access to it for the recent files list. */
     fun open(uri: Uri, persist: Boolean) {
         model.loadingStarted()
+        Log.i(TAG, "opening a document (scheme=${uri.scheme}, persist=$persist)")
         viewModelScope.launch {
+            val started = System.currentTimeMillis()
             val result = withContext(Dispatchers.IO) { runCatching { repository.read(uri, persist) } }
             val loaded = result.getOrNull()
             if (loaded != null) {
                 model.opened(uri.toString(), loaded.name, loaded.document, System.currentTimeMillis())
+                val shown = model.state.value.open
+                Log.i(
+                    TAG,
+                    "opened '${loaded.name}' in ${System.currentTimeMillis() - started} ms: " +
+                        "${shown?.blocks?.size ?: 0} blocks, ${loaded.document.plainText.length} characters of text",
+                )
                 saveRecents()
             } else {
-                val kind = LoadFailure.classify(result.exceptionOrNull() ?: IllegalStateException())
+                val failure = result.exceptionOrNull()
+                Log.e(TAG, "could not open the document", failure)
+                val kind = LoadFailure.classify(failure ?: IllegalStateException())
                 if (kind == FailureKind.NOT_FOUND || kind == FailureKind.NO_ACCESS) {
                     model.forgotten(uri.toString())
                     saveRecents()
@@ -65,6 +76,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private companion object {
+        const val TAG = "SmartWord"
         const val PREFS = "smart_word"
         const val KEY_RECENTS = "recent_files"
     }

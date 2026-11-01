@@ -15,6 +15,9 @@
     <string name="untitled">مستند جديد</string>
     <string name="unknown_file_name">مستند</string>
     <string name="document_empty">المستند فارغ</string>
+    <string name="document_empty_hint">هذه صفحة فارغة. الكتابة والتحرير تأتيان في النسخة القادمة؛ هذه النسخة تعرض الملفات للقراءة فقط.</string>
+    <string name="document_stats">%1$d فقرة · %2$d حرفًا · %3$d عنصرًا آخر</string>
+    <string name="document_no_text">لم يُعثر على نص في هذا المستند.</string>
     <string name="document_read_only">عرض للقراءة فقط في هذه النسخة</string>
     <string name="placeholder_content">محتوى لا يمكن عرضه هنا: %1$s</string>
 

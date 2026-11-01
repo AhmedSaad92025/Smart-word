@@ -46,6 +46,7 @@ import com.smartword.app.data.FontMapping
 import com.smartword.app.data.HexColor
 import com.smartword.app.preview.PreviewBlock
 import com.smartword.app.preview.PreviewParagraph
+import com.smartword.app.preview.PreviewStats
 import com.smartword.app.preview.PreviewPlaceholder
 import com.smartword.app.preview.PreviewSpan
 import com.smartword.docx.model.Alignment as DocAlignment
@@ -82,8 +83,10 @@ fun DocumentScreen(document: OpenDocument, onBack: () -> Unit) {
                 .padding(padding)
                 .background(DeskColor),
         ) {
+            val stats = remember(document) { PreviewStats.of(document.blocks) }
             Text(
-                text = stringResource(R.string.document_read_only),
+                text = stringResource(R.string.document_read_only) + " — " +
+                    stringResource(R.string.document_stats, stats.paragraphs, stats.characters, stats.otherBlocks),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color(0xFF444444),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -121,14 +124,25 @@ fun PageView(blocks: List<PreviewBlock>, modifier: Modifier = Modifier) {
         }
         if (!hasContent) {
             item {
-                Text(
-                    text = stringResource(R.string.document_empty),
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(360.dp)
                         .background(PaperColor)
                         .padding(20.dp),
-                    color = Color(0xFF777777),
-                )
+                ) {
+                    Text(
+                        text = stringResource(if (blocks.isEmpty()) R.string.document_no_text else R.string.document_empty),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF444444),
+                    )
+                    Text(
+                        text = stringResource(R.string.document_empty_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF777777),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
         }
     }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The page is always white with dark text; phone makers' automatic dark mode must not recolor it. -->
+    <style name="Theme.SmartWord" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

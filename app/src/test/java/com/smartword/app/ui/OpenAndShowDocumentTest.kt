@@ -131,6 +131,8 @@ open class OpenAndShowDocumentTest {
         rule.onNodeWithText("تقرير تجريبي بالعربية", substring = true).assertIsDisplayed()
         rule.onNodeWithText("المقدمة", substring = true).assertIsDisplayed()
         rule.onNodeWithText("هذه فقرة عربية عادية", substring = true).assertIsDisplayed()
+        // The status line says the content was read (17 paragraphs) even before looking at pixels.
+        assertTrue(rule.onAllNodesWithText("فقرة ·", substring = true).fetchSemanticsNodes().isNotEmpty())
         rule.waitForIdle()
         val shot = screenshot("arabic")
         assertTrue("no text pixels were drawn: ${count(shot, '#')}", count(shot, '#') > 500)
@@ -168,6 +170,8 @@ open class OpenAndShowDocumentTest {
         rule.onNodeWithText("رجوع").assertIsDisplayed()
         rule.onNodeWithText("عرض للقراءة فقط", substring = true).assertIsDisplayed()
         rule.onNodeWithText("المستند فارغ").assertIsDisplayed()
+        rule.onNodeWithText("هذه صفحة فارغة", substring = true).assertIsDisplayed()
+        rule.onNodeWithText("0 حرفًا", substring = true).assertIsDisplayed()
         screenshot("new-document")
     }
 
