@@ -33,7 +33,7 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w400dp-h2400dp-xhdpi")
-class OpenAndShowDocumentTest {
+open class OpenAndShowDocumentTest {
 
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
