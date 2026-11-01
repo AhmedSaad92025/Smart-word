@@ -13,10 +13,10 @@ class ArabicPhoneTest : OpenAndShowDocumentTest()
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34], qualifiers = "night-w360dp-h800dp-xhdpi")
+@Config(sdk = [34], qualifiers = "w360dp-h800dp-night-xhdpi")
 class DarkPhoneTest : OpenAndShowDocumentTest()
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "ar-rEG-night-w360dp-h800dp-xhdpi")
+@Config(sdk = [35], qualifiers = "ar-rEG-w360dp-h800dp-night-xhdpi")
 class ArabicDarkPhoneApi35Test : OpenAndShowDocumentTest()
