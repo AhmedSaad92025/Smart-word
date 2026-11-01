@@ -46,10 +46,13 @@ class EveryTestFileRendersTest {
         val files = File("../docs/test-files").walkTopDown().filter { it.extension == "docx" }.sortedBy { it.path }.toList()
         assertTrue("no sample documents found", files.size >= 7)
         val problems = ArrayList<String>()
+        val viewModel = MainViewModel(app)
+        rule.setContent { SmartWordTheme { SmartWordApp(viewModel) } }
         for (file in files) {
-            val viewModel = MainViewModel(app)
+            viewModel.close()
+            viewModel.dismissError()
+            rule.waitForIdle()
             viewModel.open(Uri.fromFile(file), persist = false)
-            rule.setContent { SmartWordTheme { SmartWordApp(viewModel) } }
             rule.waitUntil(15_000) { viewModel.state.value.open != null || viewModel.state.value.error != null }
             rule.waitForIdle()
             val state = viewModel.state.value
