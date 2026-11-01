@@ -41,32 +41,35 @@ class EveryTestFileRendersTest {
         }
     }
 
-    @Test
-    fun everySampleDocumentShowsTextOnThePage() {
-        val files = File("../docs/test-files").walkTopDown().filter { it.extension == "docx" }.sortedBy { it.path }.toList()
-        assertTrue("no sample documents found", files.size >= 7)
-        val problems = ArrayList<String>()
+    private fun check(relativePath: String) {
+        val file = File("../docs/test-files/$relativePath")
+        assertTrue("missing ${file.absolutePath}", file.exists())
         val viewModel = MainViewModel(app)
+        viewModel.open(Uri.fromFile(file), persist = false)
         rule.setContent { SmartWordTheme { SmartWordApp(viewModel) } }
-        for (file in files) {
-            viewModel.close()
-            viewModel.dismissError()
-            rule.waitForIdle()
-            viewModel.open(Uri.fromFile(file), persist = false)
-            rule.waitUntil(15_000) { viewModel.state.value.open != null || viewModel.state.value.error != null }
-            rule.waitForIdle()
-            val state = viewModel.state.value
-            val open = state.open
-            if (open == null) {
-                problems.add("${file.name}: did not open (${state.error})")
-                continue
-            }
-            val text = open.blocks.filterIsInstance<PreviewParagraph>().sumOf { p -> p.spans.sumOf { it.text.length } }
-            val dark = darkPixels(rule.activity.window.decorView.drawToBitmap())
-            println("FILE ${file.name}: blocks=${open.blocks.size} textChars=$text darkPixels=$dark")
-            if (text == 0) problems.add("${file.name}: no text found in the document")
-            if (dark < 300) problems.add("${file.name}: only $dark dark pixels were drawn")
-        }
-        assertTrue(problems.joinToString("\n"), problems.isEmpty())
+        rule.waitUntil(20_000) { viewModel.state.value.open != null || viewModel.state.value.error != null }
+        rule.waitForIdle()
+        val state = viewModel.state.value
+        val open = state.open
+        assertTrue("$relativePath did not open: ${state.error}", open != null)
+        val text = open!!.blocks.filterIsInstance<PreviewParagraph>().sumOf { p -> p.spans.sumOf { it.text.length } }
+        val dark = darkPixels(rule.activity.window.decorView.drawToBitmap())
+        println("FILE $relativePath: blocks=${open.blocks.size} textChars=$text darkPixels=$dark")
+        assertTrue("$relativePath: no text found in the document", text > 0)
+        assertTrue("$relativePath: only $dark dark pixels were drawn", dark > 300)
+    }
+
+    @Test fun handWrittenArabic() = check("01-arabic-rtl-headings.docx")
+    @Test fun handWrittenLists() = check("02-multilevel-lists.docx")
+    @Test fun handWrittenFormatting() = check("03-colors-fonts-alignment.docx")
+    @Test fun libreOfficeReportWithTableAndLink() = check("realistic/libreoffice-report.docx")
+    @Test fun libreOfficeResavedArabic() = check("realistic/libreoffice-resaved-01-arabic-rtl-headings.docx")
+    @Test fun libreOfficeResavedLists() = check("realistic/libreoffice-resaved-02-multilevel-lists.docx")
+    @Test fun libreOfficeResavedFormatting() = check("realistic/libreoffice-resaved-03-colors-fonts-alignment.docx")
+
+    @Test
+    fun noSampleDocumentIsMissingFromTheseTests() {
+        val files = File("../docs/test-files").walkTopDown().filter { it.extension == "docx" }.count()
+        assertTrue("the list of tests above must cover every sample ($files found)", files == 7)
     }
 }
