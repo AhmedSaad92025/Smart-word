@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Publishes test totals and build errors as workflow annotations so results are
 # visible without opening the raw logs.
-# Usage: summarize.sh <build-log> <test-results-dir>
+# Usage: summarize.sh <build-log> <test-results-dir> [<test-results-dir> ...]
 set +e
 LOG="${1:-build.log}"
-RES_DIR="${2:-core/docx/build/test-results/test}"
+shift 2>/dev/null
+RES_DIRS=("$@")
+[ "${#RES_DIRS[@]}" -eq 0 ] && RES_DIRS=(core/docx/build/test-results/test)
+RES_FILES=()
+for d in "${RES_DIRS[@]}"; do RES_FILES+=("$d"/*.xml); done
 
 encode() {
   local s="$1"
@@ -15,7 +19,7 @@ encode() {
 }
 
 tests=0; failures=0; errors=0; skipped=0; suites=0
-for f in "$RES_DIR"/*.xml; do
+for f in "${RES_FILES[@]}"; do
   [ -f "$f" ] || continue
   head=$(grep -m1 '<testsuite ' "$f")
   t=$(sed -n 's/.* tests="\([0-9]*\)".*/\1/p' <<<"$head")
@@ -29,7 +33,7 @@ done
 echo "::notice title=Test totals::suites=$suites tests=$tests failures=$failures errors=$errors skipped=$skipped"
 
 if [ "$failures" -gt 0 ] || [ "$errors" -gt 0 ]; then
-  detail=$(grep -h -B1 -A3 '<failure\|<error' "$RES_DIR"/*.xml 2>/dev/null | head -60)
+  detail=$(grep -h -B1 -A3 '<failure\|<error' "${RES_FILES[@]}" 2>/dev/null | head -60)
   echo "::error title=Failed tests::$(encode "$detail")"
 fi
 

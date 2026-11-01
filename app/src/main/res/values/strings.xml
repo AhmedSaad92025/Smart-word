@@ -2,4 +2,27 @@
 <resources>
     <string name="app_name">Smart Word</string>
     <string name="app_tagline">محرر مستندات وورد بسيط وسريع</string>
+
+    <string name="action_new">مستند جديد</string>
+    <string name="action_open">فتح ملف</string>
+    <string name="action_back">رجوع</string>
+    <string name="action_ok">حسنًا</string>
+
+    <string name="recent_title">الملفات الأخيرة</string>
+    <string name="recent_empty">لا توجد ملفات حديثة بعد. افتح ملفًا أو أنشئ مستندًا جديدًا.</string>
+    <string name="loading_file">جارٍ فتح الملف…</string>
+
+    <string name="untitled">مستند جديد</string>
+    <string name="unknown_file_name">مستند</string>
+    <string name="document_empty">المستند فارغ</string>
+    <string name="document_read_only">عرض للقراءة فقط في هذه النسخة</string>
+    <string name="placeholder_content">محتوى لا يمكن عرضه هنا: %1$s</string>
+
+    <string name="error_title">تعذّر إكمال العملية</string>
+    <string name="error_encrypted">هذا الملف محمي بكلمة مرور، ولا يمكن فتحه في هذه النسخة.</string>
+    <string name="error_too_large">الملف كبير جدًا أو يحتوي بنية غير آمنة، فلم يُفتح.</string>
+    <string name="error_invalid">هذا الملف ليس مستند وورد (DOCX) صالحًا أو أنه تالف.</string>
+    <string name="error_not_found">لم يعد الملف موجودًا في مكانه.</string>
+    <string name="error_no_access">لا توجد صلاحية للوصول إلى هذا الملف.</string>
+    <string name="error_other">حدث خطأ غير متوقع. حاول مرة أخرى.</string>
 </resources>

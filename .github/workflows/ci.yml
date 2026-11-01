@@ -93,7 +93,7 @@ jobs:
       - name: Summarize results
         if: always()
         shell: bash
-        run: bash .github/scripts/summarize.sh build.log core/docx/build/test-results/test
+        run: bash .github/scripts/summarize.sh build.log core/docx/build/test-results/test app/build/test-results/testDebugUnitTest
 
       - name: Lint
         run: gradle lintDebug --stacktrace
