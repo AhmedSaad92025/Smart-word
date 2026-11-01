@@ -139,7 +139,7 @@ def render_pixels(name, outdir):
     """First page as raw RGB pixels: (width, height, bytes)."""
     pdf = os.path.join(outdir, name + ".pdf")
     prefix = os.path.join(outdir, name + "-page")
-    result = subprocess.run(["pdftoppm", "-r", "100", "-f", "1", "-l", "1", "-singlefile", "-ppm", pdf, prefix],
+    result = subprocess.run(["pdftoppm", "-r", "100", "-f", "1", "-l", "1", "-singlefile", pdf, prefix],
                             capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
         fail(f"{name}: pdftoppm failed ({result.returncode}): {result.stderr.strip()[:300]}")
