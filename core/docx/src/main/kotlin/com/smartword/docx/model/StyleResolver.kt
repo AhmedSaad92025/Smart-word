@@ -6,6 +6,7 @@ import com.smartword.docx.style.ParaBag
 import com.smartword.docx.style.RunBag
 import com.smartword.docx.style.StyleSheet
 import com.smartword.docx.style.StyleType
+import com.smartword.docx.style.ColorRef
 import com.smartword.docx.style.ThemeFonts
 
 /** Combines styles, numbering and direct formatting into the formatting the reader sees. */
@@ -98,16 +99,25 @@ internal class StyleResolver(
         } else {
             fontName(bag.fontAscii) ?: fontName(bag.fontHAnsi) ?: fontName(bag.fontEa)
         }
-        val color = bag.color
+        val color = resolveColor(bag.color)
         return EffectiveRunFormat(
             bold = bold ?: false,
             italic = italic ?: false,
             underline = bag.underline ?: false,
             fontSizePt = (sizeHalf ?: DEFAULT_SIZE_HALF_POINTS) / 2f,
             fontName = font,
-            colorHex = if (color.isNullOrEmpty()) null else color,
+            colorHex = color,
             rtl = bag.rtl ?: false,
         )
+    }
+
+    /** Uppercase RRGGBB, or null for automatic. A resolvable theme color wins over the cached value. */
+    private fun resolveColor(ref: ColorRef?): String? {
+        if (ref == null) return null
+        if (ref.themeColor != null) {
+            theme.colors.resolve(ref.themeColor, ref.tint, ref.shade)?.let { return it }
+        }
+        return ref.hex
     }
 
     /** A theme reference wins over the explicit name; an unresolvable theme reference falls back to the name. */

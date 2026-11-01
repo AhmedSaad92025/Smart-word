@@ -3,6 +3,37 @@ package com.smartword.docx.style
 import com.smartword.docx.model.WordProps
 import com.smartword.docx.xml.XmlElement
 
+/**
+ * A text color as written in w:color: automatic, a plain RRGGBB value, or a theme color with an
+ * optional tint or shade. When a theme color is given it wins over the cached value (Word does the same).
+ */
+internal class ColorRef(
+    val hex: String?,
+    val themeColor: String?,
+    /** w:themeTint, 0..255, or null. */
+    val tint: Int?,
+    /** w:themeShade, 0..255, or null. */
+    val shade: Int?,
+) {
+    companion object {
+        fun from(el: XmlElement?): ColorRef? {
+            if (el == null) return null
+            val value = el.attr("val")
+            val theme = el.attr("themeColor")
+            if (value == null && theme == null) return null
+            val hex = when {
+                value == null || value.equals("auto", ignoreCase = true) -> null
+                else -> value.uppercase()
+            }
+            return ColorRef(
+                hex, theme,
+                el.attr("themeTint")?.toIntOrNull(16),
+                el.attr("themeShade")?.toIntOrNull(16),
+            )
+        }
+    }
+}
+
 /** A font as written in w:rFonts: an explicit name, a theme font reference, or both (the theme wins). */
 internal class FontRef(val name: String?, val theme: String?)
 
@@ -19,8 +50,8 @@ internal class RunBag {
     var sizeHalf: Int? = null
     var sizeCsHalf: Int? = null
 
-    /** Null: not set. Empty string: automatic. Otherwise uppercase RRGGBB. */
-    var color: String? = null
+    /** Null: not set. Otherwise the color as written, which may be automatic or a theme reference. */
+    var color: ColorRef? = null
     var rtl: Boolean? = null
     var fontAscii: FontRef? = null
     var fontHAnsi: FontRef? = null
@@ -62,8 +93,7 @@ internal class RunBag {
             if (u != null) bag.underline = u.attr("val") != "none"
             bag.sizeHalf = rPr.child("sz")?.attr("val")?.toIntOrNull()
             bag.sizeCsHalf = rPr.child("szCs")?.attr("val")?.toIntOrNull()
-            val color = rPr.child("color")?.attr("val")
-            if (color != null) bag.color = if (color.equals("auto", ignoreCase = true)) "" else color.uppercase()
+            bag.color = ColorRef.from(rPr.child("color"))
             bag.rtl = WordProps.onOff(rPr.child("rtl"))
             val fonts = rPr.child("rFonts")
             if (fonts != null) {

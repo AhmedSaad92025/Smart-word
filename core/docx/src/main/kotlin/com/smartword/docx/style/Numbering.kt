@@ -10,6 +10,11 @@ internal class LevelDef(
     val numFmt: String,
     val text: String,
     val isLegal: Boolean,
+    /**
+     * w:lvlRestart: null restarts after every higher level, 0 never restarts, n restarts only
+     * after levels up to the n-th (1-based) are used.
+     */
+    val restart: Int?,
     /** The paragraph style that is linked to this level, if any. */
     val pStyle: String?,
     val pPr: ParaBag?,
@@ -80,6 +85,7 @@ internal class NumberingDefs(
             numFmt = lvl.child("numFmt")?.attr("val") ?: "decimal",
             text = lvl.child("lvlText")?.attr("val") ?: "",
             isLegal = WordProps.onOff(lvl.child("isLgl")) == true,
+            restart = lvl.child("lvlRestart")?.attr("val")?.toIntOrNull(),
             pStyle = lvl.child("pStyle")?.attr("val"),
             pPr = lvl.child("pPr")?.let { ParaBag.from(it) },
         )
@@ -113,7 +119,10 @@ internal class NumberingCounter(private val defs: NumberingDefs) {
         val firstUse = override != null && appliedOverrides.add(numId.toLong() * 16 + lv)
         val previous = state[lv]
         state[lv] = if (firstUse || previous == null) start else previous + 1
-        for (deeper in lv + 1..MAX_LEVEL) state[deeper] = null
+        for (deeper in lv + 1..MAX_LEVEL) {
+            val restart = (num.overrides[deeper]?.level ?: levels[deeper])?.restart
+            if (restart == null || (restart > 0 && lv + 1 <= restart)) state[deeper] = null
+        }
 
         val sb = StringBuilder()
         var i = 0
