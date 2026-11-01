@@ -111,9 +111,9 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           echo "APK: $APK ($(du -h "$APK" | cut -f1)), build-tools: $BT"
           "$BT/aapt2" dump badging "$APK" > badging.txt
-          grep -E "^package:|^sdkVersion|^targetSdkVersion|application-debuggable|^application-label:" badging.txt
+          grep -E "^package:|dkVersion|application-debuggable|^application-label:" badging.txt
           grep -q "name='com.smartword.app'" badging.txt
-          grep -q "^sdkVersion:'26'" badging.txt
+          grep -Eq "^(min)?[sS]dkVersion:'26'" badging.txt
           grep -q "application-debuggable" badging.txt
           "$BT/apksigner" verify --verbose "$APK" | tee signing.txt
           grep -q "Verifies" signing.txt
