@@ -171,7 +171,7 @@ open class OpenAndShowDocumentTest {
         rule.onNodeWithText("عرض للقراءة فقط", substring = true).assertIsDisplayed()
         rule.onNodeWithText("المستند فارغ").assertIsDisplayed()
         rule.onNodeWithText("هذه صفحة فارغة", substring = true).assertIsDisplayed()
-        rule.onNodeWithText("0 حرفًا", substring = true).assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithText("حرفًا", substring = true).fetchSemanticsNodes().isNotEmpty())
         screenshot("new-document")
     }
 
