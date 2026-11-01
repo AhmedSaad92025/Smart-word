@@ -130,6 +130,7 @@ jobs:
           path: |
             **/build/reports/tests/
             **/build/reports/lint-results-debug.html
+            app/build/screenshots/
 
       # A direct download link (no GitHub artifact zip): the debug APK and the test documents.
       - name: Publish debug APK as a pre-release
